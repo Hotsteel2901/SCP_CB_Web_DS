@@ -1,9 +1,11 @@
 # SCP：收容失效 — Web 同人重制
 
 基于浏览器技术（Three.js + Web Audio + Canvas）从零实现的《SCP – Containment Breach》同人致敬版。
-所有贴图、音效均为程序运行时即时生成，无任何外部素材文件；文本为自创概述性写作。
+所有贴图、音效均为程序运行时即时生成，无任何外部素材文件（唯一的静态资源是站点图标 `favicon.svg` / `favicon.ico` / `apple-touch-icon.png`，不参与游戏运行）；文本为自创概述性写作。
 
 ## 运行方式
+
+方式零（在线直接玩）：<https://hotsteel2901.github.io/SCP_CB_Web_DS/>
 
 方式一（推荐）：
 
