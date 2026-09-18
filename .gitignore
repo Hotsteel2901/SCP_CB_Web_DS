@@ -1,0 +1,16 @@
+# 平台/工具产物（不上传）
+.vibehub/
+
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+
+# 依赖与缓存
+node_modules/
+__pycache__/
+*.pyc
+*.log

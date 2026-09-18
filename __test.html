@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head><body>
+<canvas id="c"></canvas>
+<div id="hud" class="hidden"><div id="zoneTag"></div><div id="crosshair"></div><div id="msgs"></div><div id="subtitle"></div><div id="hint" class="hidden"></div><div class="meter" id="blinkMeter"><div class="bar"><div class="fill" id="blinkFill"></div></div></div><div class="meter" id="stamMeter"><div class="bar"><div class="fill" id="stamFill"></div></div></div><div id="hpBox"></div></div>
+<canvas id="minimap" width="168" height="168" class="hidden"></canvas>
+<div id="lidTop"></div><div id="lidBottom"></div>
+<div id="damageVg"></div><div id="gasVg"></div><div id="maskVg"></div>
+<div id="nvgVg"></div>
+<div id="warheadHud" class="hidden"></div>
+<div id="achvToast" class="hidden"><div id="achvToastIcon"></div><div id="achvToastName"></div><div id="achvToastDesc"></div></div>
+<div id="flash"></div>
+<div id="menu" class="overlay"><input type="text" id="seedInput"><select id="diffInput"><option value="std">std</option><option value="keter">keter</option></select><button id="startBtn">start</button><input type="range" id="sensInput"><input type="range" id="volInput"></div>
+<div id="loading" class="overlay hidden"></div>
+<div id="pause" class="overlay hidden"><div id="pauseSeed"></div><button id="resumeBtn"></button><button id="restartBtn"></button><button id="newMapBtn"></button><input type="range" id="sensInput2"><input type="range" id="volInput2"></div>
+<div id="inv" class="overlay hidden"><div id="invGrid"></div><div id="invTip"></div></div>
+<div id="reader" class="overlay hidden"><h3 id="docTitle"></h3><div id="docBody"></div><button id="docClose"></button></div>
+<div id="pick" class="overlay hidden"><h1 id="pickTitle"></h1><div id="pickList"></div><button id="pickCancel"></button></div>
+<div id="death" class="overlay hidden"><div id="deathBody"></div><button id="retryBtn"></button><button id="retryNewBtn"></button></div>
+<div id="ending" class="overlay hidden"><div id="endTitle"></div><div id="endBody"></div><button id="endMenuBtn"></button></div>
+<div id="achv" class="overlay hidden"><div id="achvCount"></div><div id="achvGrid"></div><button id="achvCloseBtn"></button></div>
+<div id="term" class="overlay hidden"><div id="termBox"><div id="termTitle"></div><div id="termLog"></div><div id="termHint"></div><input id="termInput"><div id="termChoices"></div></div></div>
+<div id="console" class="hidden"><div id="conLog"></div><div id="conRow"><span>&gt;</span><input id="conInput"></div></div>
+<div id="fpsHud"></div>
+<div id="fade"></div>
+<script>
+window.__errs = [];
+window.addEventListener('error', function(e){ window.__errs.push((e.message||'?') + ' @ ' + (e.filename||'') + ':' + (e.lineno||0) + ':' + (e.colno||0)); });
+window.addEventListener('unhandledrejection', function(e){ window.__errs.push('PROMISE: ' + (e.reason && e.reason.stack ? e.reason.stack : e.reason)); });
+</script>
+<script src="lib/three.min.js"></script>
+<script src="js/util.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/textures.js"></script>
+<script src="js/art2.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/items.js"></script>
+<script src="js/content.js"></script>
+<script src="js/rooms.js"></script>
+<script src="js/map.js"></script>
+<script src="js/npcs.js"></script>
+<script src="js/game.js"></script>
+<script src="js/scps.js"></script>
+<script src="js/endgame.js"></script>
+<script src="js/achv.js"></script>
+<script>
+setTimeout(function(){
+  try {
+    document.getElementById('startBtn').click();
+  } catch(e){ window.__errs.push('CLICK: '+ (e.stack||e)); }
+  setTimeout(function(){
+    var out = document.createElement('pre');
+    out.id = 'ERRDUMP';
+    out.textContent = 'ERRORS(' + window.__errs.length + '):\n' + window.__errs.join('\n---\n');
+    document.body.appendChild(out);
+  }, 3000);
+}, 500);
+</script>
+</body></html>
