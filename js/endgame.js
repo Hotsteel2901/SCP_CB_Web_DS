@@ -726,6 +726,7 @@ window.SCP = window.SCP || {};
   G.showEnding = function (title, subtitle, body) {
     G.state = 'ending';
     if (S.stopAllLoops) S.stopAllLoops();
+    if (G.setEndingMusic) G.setEndingMusic(/B2/.test(subtitle || ''));
     document.exitPointerLock && document.exitPointerLock();
     $('endTitle').textContent = title;
     const sub = document.createElement('div');
@@ -741,30 +742,7 @@ window.SCP = window.SCP || {};
 
   /* ======================================================= 机动特遣队（结局演出） */
   function mtfMesh() {
-    const grp = new THREE.Group();
-    const cloth = new THREE.MeshLambertMaterial({ color: 0x2a3038 });
-    const vestM = new THREE.MeshLambertMaterial({ color: 0x1c2026 });
-    const skin = new THREE.MeshLambertMaterial({ color: 0x9a8b78 });
-    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.95, 0.24), cloth);
-    leg.position.set(-0.15, 0.48, 0);
-    const leg2 = leg.clone(); leg2.position.x = 0.15;
-    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.75, 0.32), cloth);
-    torso.position.y = 1.32;
-    const vest = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.5, 0.36), vestM);
-    vest.position.y = 1.36;
-    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.72, 0.17), cloth);
-    arm.position.set(-0.37, 1.3, 0);
-    const arm2 = arm.clone(); arm2.position.x = 0.37;
-    const head = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.32, 0.3), skin);
-    head.position.y = 1.86;
-    const helm = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.22, 0.34), vestM);
-    helm.position.y = 1.95;
-    const rifle = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.12, 0.9), vestM);
-    rifle.position.set(-0.28, 1.28, 0.42);
-    grp.add(leg); grp.add(leg2); grp.add(torso); grp.add(vest);
-    grp.add(arm); grp.add(arm2); grp.add(head); grp.add(helm); grp.add(rifle);
-    grp.userData = { leg: leg, leg2: leg2, arm: arm, arm2: arm2 };
-    return grp;
+    return S.models.mtf();
   }
   function spawnMTF(x, z, n) {
     for (let i = 0; i < n; i++) {

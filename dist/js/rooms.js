@@ -225,10 +225,24 @@ window.SCP = window.SCP || {};
     }
     for (let i = 0; i < 5; i++) {
       const px = cx + ctx.rng.range(-3, 3), pz = cz + ctx.rng.range(-3, 3);
-      const meat = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.9, 0.5),
-        new THREE.MeshLambertMaterial({ color: 0x7a1a18 }));
-      meat.position.set(px, 2.2, pz);
-      ctx.scene.add(meat);
+      // 挂在钩子上的肉块：链条 + 钩 + 微微摆动的肉
+      const hook = new THREE.Group();
+      const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 1.1, 6), m.dark);
+      chain.position.y = -0.55;
+      hook.add(chain);
+      const meatMat = new THREE.MeshStandardMaterial({ color: 0x6d1a16, roughness: 0.62, metalness: 0.04 });
+      const meat = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.26, 0.72, 9), meatMat);
+      meat.scale.set(1, 1, 0.82);
+      meat.position.y = -1.35;
+      meat.rotation.z = ctx.rng.range(-0.16, 0.16);
+      hook.add(meat);
+      const fat = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.20, 0.12, 9),
+        new THREE.MeshStandardMaterial({ color: 0xc9b48f, roughness: 0.8 }));
+      fat.position.y = -0.98;
+      hook.add(fat);
+      hook.position.set(px, 2.70, pz);
+      hook.rotation.y = ctx.rng.range(0, 6.28);
+      ctx.scene.add(hook);
     }
     ctx.addDecal(ctx.T.blood, cx + 1.5, cz + 1.5, 3.0);
     ctx.addDecal(ctx.T.blood, cx - 2.0, cz - 1.0, 2.4);

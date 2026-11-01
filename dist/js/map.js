@@ -8,26 +8,30 @@ window.SCP = window.SCP || {};
     const scene = game.scene;
     const rng = S.makeRng(L.seed + ':deco');
 
+    /* 材质：统一升到 PBR（Standard + 程序化法线），金属/混凝土才有真实的粗糙度层次 */
+    const std = (map, o) => S.fx.std(Object.assign({ map: map }, o || {}));
     const mats = {
-      lczWall: new THREE.MeshLambertMaterial({ map: T.lczWall }),
-      lczFloor: new THREE.MeshLambertMaterial({ map: T.lczFloor }),
-      hczWall: new THREE.MeshLambertMaterial({ map: T.hczWall }),
-      hczFloor: new THREE.MeshLambertMaterial({ map: T.hczFloor }),
-      ezWall: new THREE.MeshLambertMaterial({ map: T.ezWall }),
-      ezFloor: new THREE.MeshLambertMaterial({ map: T.ezFloor }),
-      ceil: new THREE.MeshLambertMaterial({ map: T.ceil }),
-      dark: new THREE.MeshLambertMaterial({ color: 0x2a2d33 }),
-      metal: new THREE.MeshLambertMaterial({ color: 0x565d66 }),
-      white: new THREE.MeshLambertMaterial({ color: 0xcfd2d6 }),
-      wood: new THREE.MeshLambertMaterial({ color: 0x6e5a41 }),
-      copper: new THREE.MeshLambertMaterial({ color: 0x7d5a36 }),
-      server: new THREE.MeshLambertMaterial({ map: T.server }),
-      orange: new THREE.MeshLambertMaterial({ color: 0xb85c1e }),
-      navy: new THREE.MeshLambertMaterial({ color: 0x2a3448 }),
-      redDark: new THREE.MeshLambertMaterial({ color: 0x30100e }),
-      pdFloor: new THREE.MeshLambertMaterial({ color: 0x1c0806 }),
+      lczWall: std(T.lczWall, { roughness: 0.92, metalness: 0.04, normalStrength: 1.2 }),
+      lczFloor: std(T.lczFloor, { roughness: 0.84, metalness: 0.06, normalStrength: 0.9 }),
+      hczWall: std(T.hczWall, { roughness: 0.8, metalness: 0.18, normalStrength: 1.5 }),
+      hczFloor: std(T.hczFloor, { roughness: 0.72, metalness: 0.2, normalStrength: 1.2 }),
+      ezWall: std(T.ezWall, { roughness: 0.86, metalness: 0.08, normalStrength: 1.1 }),
+      ezFloor: std(T.ezFloor, { roughness: 0.62, metalness: 0.16, normalStrength: 0.8 }),
+      ceil: std(T.ceil, { roughness: 0.95, metalness: 0.03, normalStrength: 0.7 }),
+      dark: std(null, { color: 0x24272c, roughness: 0.68, metalness: 0.35 }),
+      metal: std(null, { color: 0x6a727a, roughness: 0.42, metalness: 0.72 }),
+      white: std(null, { color: 0xd2d5d8, roughness: 0.72, metalness: 0.05 }),
+      wood: std(null, { color: 0x6e5a41, roughness: 0.88, metalness: 0.02 }),
+      copper: std(null, { color: 0x8a5e33, roughness: 0.46, metalness: 0.78 }),
+      server: std(T.server, { roughness: 0.6, metalness: 0.4, normalStrength: 0.8 }),
+      orange: std(null, { color: 0xb85c1e, roughness: 0.82 }),
+      navy: std(null, { color: 0x2a3448, roughness: 0.9 }),
+      redDark: std(null, { color: 0x30100e, roughness: 0.86 }),
+      pdFloor: std(null, { color: 0x1c0806, roughness: 0.55, metalness: 0.1 }),
       lightPanel: new THREE.MeshBasicMaterial({ color: 0xd8e2ea }),
-      screen: new THREE.MeshBasicMaterial({ color: 0x9fe0b2 })
+      screen: new THREE.MeshBasicMaterial({ color: 0x9fe0b2 }),
+      trim: std(null, { color: 0x15171a, roughness: 0.62, metalness: 0.5 }),
+      hazard: std(null, { color: 0xc9a13b, roughness: 0.7, metalness: 0.2 })
     };
     const buckets = new Map();
     function bucket(mat) {
@@ -175,7 +179,10 @@ window.SCP = window.SCP || {};
       const cx = S.worldX(cell.c), cz = S.worldZ(cell.r);
       addBox(zm.floor, CELL + WT, 0.3, CELL + WT, cx, -0.15, cz, 0, false, cell);
       addBox(mats.ceil, CELL + WT, 0.3, CELL + WT, cx, H + 0.15, cz, 0, false, cell);
-      bucket(mats.lightPanel).push({ geo: new THREE.PlaneGeometry(1.5, 1.5).rotateX(Math.PI / 2), matrix: S.boxAt(cx, H - 0.02, cz) });
+      // 灯具：金属灯槽 + 发光面板 + 吊杆（合并进静态几何）
+      addBox(mats.dark, 1.72, 0.12, 0.56, cx, H - 0.06, cz, 0, false, cell);
+      bucket(mats.lightPanel).push({ geo: new THREE.PlaneGeometry(1.58, 0.42).rotateX(Math.PI / 2), matrix: S.boxAt(cx, H - 0.125, cz) });
+      for (const ox of [-0.7, 0.7]) bucket(mats.metal).push({ geo: new THREE.CylinderGeometry(0.018, 0.018, 0.16, 5), matrix: S.boxAt(cx + ox, H - 0.02, cz) });
 
       for (const d of ['n', 'e']) {
         const dd = S.DIRS[d];
@@ -220,6 +227,168 @@ window.SCP = window.SCP || {};
       }
     }
 
+
+    /* ---------------- 建筑细节：踢脚线 / 顶角线 / 管线 / 通风口 / 杂物 ---------------- */
+    function trimPiece(cx, cz, alongX, len, y, h, t, mat) {
+      const w = alongX ? len : t;
+      const d = alongX ? t : len;
+      bucket(mat || mats.trim).push({ geo: S.texturedBoxGeo(w, h, d, 8), matrix: S.boxAt(cx, y, cz) });
+    }
+    const inner = CELL / 2 - WT / 2;       // 墙内表面到格心
+    const gapHalf = GAP / 2;
+    const segLen = (CELL - GAP) / 2;
+    for (const cell of L.cells.values()) {
+      const cx = S.worldX(cell.c), cz = S.worldZ(cell.r);
+      for (const d of ['n', 's', 'e', 'w']) {
+        const dd = S.DIRS[d];
+        const nb = L.get(cell.c + dd.dc, cell.r + dd.dr);
+        const open = cell.open[d] && nb;
+        const horiz = (d === 'n' || d === 's');
+        const face = inner - 0.035;
+        const px = d === 'e' ? cx + face : d === 'w' ? cx - face : cx;
+        const pz = d === 'n' ? cz - face : d === 's' ? cz + face : cz;
+        const spans = open
+          ? [[-1, gapHalf + segLen / 2, segLen], [1, gapHalf + segLen / 2, segLen]]
+          : [[0, 0, CELL]];
+        for (const sp of spans) {
+          const ox = horiz ? sp[1] : 0, oz = horiz ? 0 : sp[1];
+          trimPiece(px + ox, pz + oz, horiz, sp[2], 0.09, 0.18, 0.07);
+          trimPiece(px + ox, pz + oz, horiz, sp[2], H - 0.09, 0.1, 0.05, mats.dark);
+        }
+        // 门框：门洞两侧的金属包边
+        if (open) {
+          for (const sgn of [-1, 1]) {
+            const dxx = horiz ? sgn * gapHalf : 0;
+            const dzz = horiz ? 0 : sgn * gapHalf;
+            bucket(mats.metal).push({
+              geo: S.texturedBoxGeo(horiz ? 0.12 : 0.26, 3.1, horiz ? 0.26 : 0.12, 6),
+              matrix: S.boxAt(px + dxx, 1.55, pz + dzz)
+            });
+          }
+          // 门楣上方的加固梁
+          bucket(mats.dark).push({
+            geo: S.texturedBoxGeo(horiz ? GAP + 1.1 : 0.3, 0.22, horiz ? 0.3 : GAP + 1.1, 6),
+            matrix: S.boxAt(px, 3.18, pz)
+          });
+        }
+        // 墙面通风口
+        if (!open && rng.chance(0.12)) {
+          const vy = 2.75;
+          const vx = horiz ? px + rng.range(-2, 2) : px;
+          const vz = horiz ? pz : pz + rng.range(-2, 2);
+          bucket(mats.dark).push({
+            geo: S.texturedBoxGeo(horiz ? 0.9 : 0.05, 0.5, horiz ? 0.05 : 0.9, 3),
+            matrix: S.boxAt(vx, vy, vz)
+          });
+          for (let i = 0; i < 5; i++) {
+            bucket(mats.metal).push({
+              geo: S.texturedBoxGeo(horiz ? 0.82 : 0.02, 0.03, horiz ? 0.02 : 0.82, 2),
+              matrix: S.boxAt(vx, vy - 0.18 + i * 0.09, vz)
+            });
+          }
+        }
+      }
+
+      // 走廊管线：沿墙上方走一根粗管 + 两根细管
+      let opens = 0;
+      for (const d in S.DIRS) if (cell.open[d]) opens++;
+      if (!cell.special && opens >= 2 && rng.chance(0.55)) {
+        const horiz = rng.chance(0.5);
+        const zoff = horiz ? -inner + 0.34 : 0;
+        const xoff = horiz ? 0 : inner - 0.34;
+        const y = H - 0.42;
+        for (let i = 0; i < 2; i++) {
+          bucket(mats.metal).push({
+            geo: new THREE.CylinderGeometry(0.055 - i * 0.015, 0.055 - i * 0.015, CELL, 8),
+            matrix: S.boxAt(cx + xoff + (horiz ? 0 : i * 0.16), y - i * 0.16, cz + zoff + (horiz ? i * 0.16 : 0))
+              .multiply(new THREE.Matrix4().makeRotationZ(horiz ? Math.PI / 2 : 0))
+              .multiply(new THREE.Matrix4().makeRotationX(horiz ? 0 : Math.PI / 2))
+          });
+        }
+        for (let i = 0; i < 3; i++) {
+          const px = cx + (horiz ? -3 + i * 3 : xoff);
+          const pz = cz + (horiz ? zoff : -3 + i * 3);
+          bucket(mats.dark).push({ geo: S.texturedBoxGeo(horiz ? 0.1 : 0.34, 0.34, horiz ? 0.34 : 0.1, 3), matrix: S.boxAt(px, y + 0.15, pz) });
+        }
+      }
+
+      // 杂物：靠墙摆放，绝不影响通行
+      if (!cell.special && opens >= 2) {
+        const r = rng.next();
+        const sides = ['n', 's', 'e', 'w'].filter((d) => !cell.open[d]);
+        const side = sides.length ? sides[Math.floor(rng.next() * sides.length)] : null;
+        if (side && r < 0.34) {
+          const horiz = side === 'n' || side === 's';
+          const sgn = side === 's' || side === 'e' ? 1 : -1;
+          const off = inner - 0.55;
+          const baseX = cx + (horiz ? rng.range(-2.4, 2.4) : sgn * off);
+          const baseZ = cz + (horiz ? sgn * off : rng.range(-2.4, 2.4));
+          if (r < 0.12) {
+            // 储物柜
+            const locker = new THREE.Group();
+            locker.add(new THREE.Mesh(new THREE.BoxGeometry(0.92, 2.0, 0.46), mats.metal));
+            for (const yy of [-0.8, -0.55, 0.05, 0.75]) {
+              const vent = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.03, 0.02), mats.dark);
+              vent.position.set(0, yy, 0.24);
+              locker.add(vent);
+            }
+            const handle = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.22, 0.05), mats.dark);
+            handle.position.set(0.33, 0, 0.26);
+            locker.add(handle);
+            addModel(locker, baseX, 1.0, baseZ, Math.atan2(cx - baseX, cz - baseZ), 0.9, 0.55);
+          } else if (r < 0.22) {
+            addModel(S.models.makeBarrel(mats), baseX, 0, baseZ, 0, 0.7);
+          } else if (r < 0.3) {
+            addModel(S.models.makeCrate(mats, 1), baseX, 0, baseZ, rng.range(0, 3), 0.95);
+            if (rng.chance(0.5)) addModel(S.models.makeCrate(mats, 0.7), baseX + 0.2, 0.8, baseZ + 0.1, rng.range(0, 3), 0);
+          } else {
+            addModel(S.models.makeChair(mats), baseX, 0, baseZ, rng.range(0, 6), 0.45);
+          }
+        }
+        // 墙面灭火器
+        if (side && r > 0.34 && r < 0.42) {
+          const horiz = side === 'n' || side === 's';
+          const sgn = side === 's' || side === 'e' ? 1 : -1;
+          const px = cx + (horiz ? rng.range(-2, 2) : sgn * (inner - 0.12));
+          const pz = cz + (horiz ? sgn * (inner - 0.12) : rng.range(-2, 2));
+          const ext = new THREE.Group();
+          ext.add(new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.52, 10), mats.redDark));
+          ext.add(new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.12, 8), mats.dark));
+          ext.children[1].position.y = 0.3;
+          addModel(ext, px, 1.15, pz, 0, 0.25);
+        }
+      }
+    }
+
+    /* addModel：把一个临时模型烘焙进静态合并桶（保持低 draw call） */
+    function addModel(g, x, y, z, ry, solidR) {
+      g.position.set(x, y, z);
+      g.rotation.y = ry || 0;
+      g.updateMatrixWorld(true);
+      g.traverse((o) => {
+        if (!o.isMesh) return;
+        const mat = Array.isArray(o.material) ? o.material[0] : o.material;
+        const geo = o.geometry.clone();
+        bucket(mat).push({ geo: geo, matrix: o.matrixWorld.clone() });
+      });
+      if (solidR) W.colliders.get(S.key(S.colOf(x), S.rowOf(z))).push(S.aabb(x, z, solidR, solidR, 0, 3));
+    }
+
+    const hazardTex = (function () {
+      const c = S.fx.cv(128, 32), x = c.getContext('2d');
+      x.fillStyle = '#111';
+      x.fillRect(0, 0, 128, 32);
+      x.fillStyle = '#c9a13b';
+      for (let i = -32; i < 160; i += 32) {
+        x.beginPath();
+        x.moveTo(i, 32); x.lineTo(i + 16, 32); x.lineTo(i + 32, 0); x.lineTo(i + 16, 0);
+        x.closePath(); x.fill();
+      }
+      const t = new THREE.CanvasTexture(c);
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      return t;
+    })();
+
     for (const door of L.doors) {
       const cell = L.get(door.c, door.r);
       const dd = S.DIRS[door.side];
@@ -227,7 +396,7 @@ window.SCP = window.SCP || {};
       const horiz = (door.side === 'n' || door.side === 's');
       const x = horiz ? cx : (door.side === 'e' ? cx + CELL / 2 : cx - CELL / 2);
       const z = horiz ? (door.side === 'n' ? cz - CELL / 2 : cz + CELL / 2) : cz;
-      const texMat = new THREE.MeshLambertMaterial({ map: door.big ? T.doorBig : T.door });
+      const texMat = S.fx.std({ map: door.big ? T.doorBig : T.door, roughness: 0.55, metalness: 0.55, normalStrength: 1.2 });
       const g1 = S.texturedBoxGeo(GAP / 2, 3, 0.18, GAP);
       const p1 = new THREE.Mesh(g1, texMat);
       const p2 = new THREE.Mesh(g1, texMat);
@@ -242,6 +411,32 @@ window.SCP = window.SCP || {};
       const fm2 = fm.clone();
       fm2.position.set(horiz ? x + GAP / 2 + 0.2 : x, H / 2, horiz ? z : z + GAP / 2 + 0.2);
       scene.add(fm); scene.add(fm2);
+
+      // 门体细节：顶部轨道、读卡器、状态灯、地面警示
+      const track = new THREE.Mesh(
+        new THREE.BoxGeometry(horiz ? GAP + 0.9 : 0.34, 0.16, horiz ? 0.34 : GAP + 0.9),
+        mats.metal
+      );
+      track.position.set(x, 3.08, z);
+      scene.add(track);
+      const off = GAP / 2 + 0.42;
+      const rx = x + (horiz ? off : 0);
+      const rz = z + (horiz ? 0 : off);
+      const reader = new THREE.Mesh(new THREE.BoxGeometry(horiz ? 0.16 : 0.12, 0.34, horiz ? 0.12 : 0.16), mats.dark);
+      reader.position.set(rx, 1.32, rz);
+      scene.add(reader);
+      const ledMat = new THREE.MeshBasicMaterial({ color: door.level > 0 ? 0xff3b28 : 0x4dff88 });
+      const led = new THREE.Mesh(new THREE.BoxGeometry(horiz ? 0.1 : 0.03, 0.05, horiz ? 0.03 : 0.1), ledMat);
+      led.position.set(rx, 1.43, rz);
+      scene.add(led);
+      door.ledMat = ledMat;
+      if (door.level > 0) {
+        const band = new THREE.Mesh(new THREE.PlaneGeometry(GAP, 0.5), new THREE.MeshBasicMaterial({ map: hazardTex, transparent: true }));
+        band.rotation.x = -Math.PI / 2;
+        band.rotation.z = horiz ? 0 : Math.PI / 2;
+        band.position.set(x + (horiz ? 0 : 1.1), 0.025, z + (horiz ? 1.1 : 0));
+        scene.add(band);
+      }
       door.grp = grp; door.p1 = p1; door.p2 = p2; door.horiz = horiz;
       door.x = x; door.z = z;
       door.aabb = horiz ? S.aabb(x, z, GAP / 2 + 0.2, 0.3, 0, 3) : S.aabb(x, z, 0.3, GAP / 2 + 0.2, 0, 3);
@@ -257,9 +452,13 @@ window.SCP = window.SCP || {};
       });
     }
     W.updateDoor = function (door) {
-      const slide = (GAP / 2) * door.amount + 0.02;
-      door.p1.position.x = -GAP / 4 - slide * 0.98;
-      door.p2.position.x = GAP / 4 + slide * 0.98;
+      const slide = (GAP / 2) * door.amount;
+      door.p1.position.x = -GAP / 4 - slide * 0.98 + 0.045;
+      door.p2.position.x = GAP / 4 + slide * 0.98 - 0.045;
+      if (door.ledMat) {
+        const unlocked = !door.locked && !door.broken;
+        door.ledMat.color.setHex(door.broken ? 0x552211 : unlocked ? (door.open ? 0x4dff88 : 0x3fa060) : 0xff3b28);
+      }
     };
     for (const d of L.doors) W.updateDoor(d);
 

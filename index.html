@@ -39,7 +39,7 @@ kbd{background:#1d2025;border:1px solid #3a3f46;border-bottom-width:3px;border-r
 #blinkMeter .fill{background:linear-gradient(90deg,#3f6ea8,#7db4e8)}
 #stamMeter{right:22px}
 #stamMeter .fill{background:linear-gradient(90deg,#7a5c22,#e8b64c)}
-#hpBox{position:absolute;bottom:80px;left:22px;font-size:12px;color:#b66;letter-spacing:2px;text-shadow:0 0 6px #000}
+#hpBox{position:absolute;bottom:96px;left:22px;font-size:12px;color:#b66;letter-spacing:2px;text-shadow:0 0 6px #000}
 #msgs{position:absolute;top:16%;left:0;right:0;text-align:center;pointer-events:none}
 .msg{display:inline-block;background:rgba(0,0,0,.55);padding:4px 14px;margin:3px;color:#ddd;font-size:14px;letter-spacing:1px;border-left:2px solid var(--amber)}
 #subtitle{position:absolute;bottom:110px;left:0;right:0;text-align:center;font-size:15px;color:#ffd98a;text-shadow:0 1px 2px #000,0 0 8px #000;letter-spacing:1px;padding:0 10%}
@@ -54,6 +54,12 @@ body.blink #lidBottom{transform:translateY(0)}
 #gasVg{position:fixed;inset:0;z-index:12;pointer-events:none;opacity:0;background:radial-gradient(ellipse at center,rgba(70,110,40,.12) 30%,rgba(60,120,30,.5)100%);transition:opacity .4s}
 #maskVg{position:fixed;inset:0;z-index:13;pointer-events:none;opacity:0;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.9)98%);transition:opacity .3s}
 #fade{position:fixed;inset:0;background:#000;z-index:30;opacity:1;transition:opacity .6s;pointer-events:none}
+/* 画面后期：暗角 / 胶片颗粒 / 扫描线（纯 DOM，零 GPU 开销） */
+.fxLayer{position:fixed;inset:0;pointer-events:none;z-index:11}
+#vignette{background:radial-gradient(ellipse at 50% 50%,transparent 42%,rgba(0,0,0,.55) 88%,rgba(0,0,0,.8) 100%);opacity:.8}
+#grain{opacity:.16;background-image:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");animation:grainShift .7s steps(3) infinite;mix-blend-mode:overlay}
+#scanlines{opacity:.18;background:repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0 1px,transparent 1px 3px)}
+@keyframes grainShift{0%{background-position:0 0}33%{background-position:-40px 20px}66%{background-position:30px -30px}100%{background-position:0 0}}
 #flash{position:fixed;inset:0;background:#fff;z-index:29;opacity:0;pointer-events:none}
 #minimap{position:fixed;top:14px;right:14px;z-index:11;background:rgba(5,6,8,.8);border:1px solid #333;image-rendering:pixelated}
 #invGrid{display:grid;grid-template-columns:repeat(5,86px);gap:10px;justify-content:center;margin:16px 0}
@@ -109,6 +115,67 @@ body.blink #lidBottom{transform:translateY(0)}
 #termRow span{color:#7fffa0;padding-right:8px}
 #termInput{flex:1;background:transparent;border:0;outline:0;color:#d8ffe0;font-family:inherit;font-size:14px;user-select:text;-webkit-user-select:text}
 #termChoices{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+
+/* ============ 触屏 UI ============ */
+#c{touch-action:none}
+#touchUI{display:none}
+body.touch #touchUI{display:block}
+#stickBase{position:fixed;left:120px;top:70%;width:132px;height:132px;margin:-66px 0 0 -66px;border-radius:50%;
+  border:1px solid rgba(200,210,220,.24);background:radial-gradient(circle,rgba(255,255,255,.05),rgba(0,0,0,.22));
+  opacity:0;transition:opacity .16s;z-index:9;pointer-events:none;backdrop-filter:blur(2px)}
+#stickKnob{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:0;border-radius:50%;
+  transform:translate(-50%,-50%);background:radial-gradient(circle at 40% 35%,rgba(232,182,76,.5),rgba(120,90,30,.28));
+  border:1px solid rgba(232,182,76,.55);box-shadow:0 0 14px rgba(0,0,0,.5);pointer-events:none}
+#touchBtns{position:fixed;right:calc(18px + env(safe-area-inset-right));bottom:calc(22px + env(safe-area-inset-bottom));
+  display:flex;align-items:flex-end;gap:12px;z-index:9}
+#touchSide{position:fixed;right:calc(14px + env(safe-area-inset-right));top:calc(96px + env(safe-area-inset-top));
+  display:flex;flex-direction:column;gap:8px;z-index:9}
+.tbtn{font-family:inherit;color:#d8dde2;background:rgba(14,16,19,.72);border:1px solid rgba(150,160,172,.4);
+  border-radius:50%;width:58px;height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:0;line-height:1;letter-spacing:0;-webkit-tap-highlight-color:transparent;touch-action:none;
+  box-shadow:0 2px 10px rgba(0,0,0,.55);transition:transform .08s,background .12s,border-color .12s}
+.tbtn .tb-main{font-size:17px;color:#e8e8e8}
+.tbtn .tb-sub{font-size:9px;color:#8d949c;margin-top:2px;letter-spacing:1px}
+.tbtn.primary{width:74px;height:74px;border-color:rgba(232,182,76,.6);background:rgba(34,28,14,.78)}
+.tbtn.primary .tb-main{font-size:22px;color:var(--amber)}
+.tbtn.down{transform:scale(.92);background:rgba(60,52,26,.85);border-color:var(--amber)}
+.tbtn.on{border-color:var(--green);box-shadow:0 0 12px rgba(127,191,106,.45)}
+.tbtn.side{width:46px;height:46px;border-radius:8px;font-size:11px;color:#9aa3ac;letter-spacing:1px}
+.tbtn.side.down,.tbtn.side:active{color:var(--amber);border-color:var(--amber)}
+#touchHint{position:fixed;left:0;right:0;bottom:calc(120px + env(safe-area-inset-bottom));text-align:center;
+  color:#9aa3ac;font-size:12px;letter-spacing:2px;pointer-events:none;transition:opacity 1s;z-index:9;text-shadow:0 1px 3px #000}
+body.touch .meter{width:132px;height:38px;padding:4px 6px;bottom:calc(14px + env(safe-area-inset-bottom))}
+body.touch .meter .lbl{font-size:9px;letter-spacing:1px}
+body.touch .meter .lbl span:last-child{display:none}
+body.touch .meter .bar{height:10px;margin-top:3px}
+body.touch #blinkMeter{left:calc(12px + env(safe-area-inset-left))}
+body.touch #stamMeter{left:calc(12px + env(safe-area-inset-left));bottom:calc(60px + env(safe-area-inset-bottom));right:auto}
+body.touch #hpBox{bottom:auto;top:calc(44px + env(safe-area-inset-top));font-size:11px;color:#a35;left:calc(12px + env(safe-area-inset-left))}
+body.touch #zoneTag{top:calc(10px + env(safe-area-inset-top));left:calc(12px + env(safe-area-inset-left));font-size:10px}
+body.touch #minimap{width:120px;height:120px;top:calc(12px + env(safe-area-inset-top));right:calc(12px + env(safe-area-inset-right))}
+body.touch #subtitle{bottom:40%;font-size:13px;padding:0 6%}
+body.touch #hint{top:auto;bottom:34%;font-size:13px}
+body.touch #msgs{top:12%}
+body.touch .msg{font-size:12px}
+body.touch #hud .meter .lbl span:last-child{display:none}
+@media (pointer:coarse){
+  #crosshair{width:6px;height:6px;margin:-3px}
+  .panel{padding:18px 16px;max-height:94vh}
+  #invGrid{grid-template-columns:repeat(4,1fr);gap:8px}
+  .slot{width:auto;aspect-ratio:1;height:auto}
+  .slot img{width:40px;height:40px}
+  .slot .nm{font-size:9px}
+  h1{font-size:26px;letter-spacing:3px}
+  #menu .help{font-size:12px;line-height:1.65}
+  .btn{padding:12px 18px;font-size:14px}
+  input[type=text],select{padding:10px;font-size:16px}
+  #reader .doc{padding:20px 18px;font-size:13px;max-height:76vh}
+  #console{height:44vh}
+}
+@media (max-height:520px){
+  body.touch #stamMeter{bottom:calc(56px + env(safe-area-inset-bottom))}
+  #touchHint{display:none}
+}
 ::-webkit-scrollbar{width:8px}::-webkit-scrollbar-thumb{background:#333}
 </style>
 </head>
@@ -221,6 +288,7 @@ body.blink #lidBottom{transform:translateY(0)}
     <h1 style="font-size:20px;letter-spacing:3px">随身物品</h1>
     <div id="invGrid"></div>
     <div id="invTip">左键：使用 / 装备　右键：丢弃　<kbd>Tab</kbd> 关闭</div>
+    <div class="row"><button class="btn" id="invClose">关闭</button></div>
   </div>
 </div>
 
@@ -260,7 +328,10 @@ body.blink #lidBottom{transform:translateY(0)}
 
 <script src="lib/three.min.js"></script>
 <script src="js/util.js"></script>
+<script src="js/fx.js"></script>
+<script src="js/models.js"></script>
 <script src="js/audio.js"></script>
+<script src="js/music.js"></script>
 <script src="js/textures.js"></script>
 <script src="js/art2.js"></script>
 <script src="js/layout.js"></script>
@@ -273,5 +344,6 @@ body.blink #lidBottom{transform:translateY(0)}
 <script src="js/scps.js"></script>
 <script src="js/endgame.js"></script>
 <script src="js/achv.js"></script>
+<script src="js/mobile.js"></script>
 </body>
 </html>

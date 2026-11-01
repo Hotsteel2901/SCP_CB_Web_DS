@@ -44,122 +44,21 @@ window.SCP = window.SCP || {};
 
   /* -------------------------------------------------- 模型 */
   function humanoid(mats, o) {
-    const g = new THREE.Group();
-    const sk = mats.skin;
-    const legLen = o.legLen || 0.95, torsoH = o.torsoH || 0.72, torsoW = o.torsoW || 0.52;
-    const legL = new THREE.Mesh(new THREE.BoxGeometry(0.2, legLen, 0.22), sk);
-    legL.position.set(-0.14, legLen / 2, 0);
-    const legR = legL.clone(); legR.position.x = 0.14;
-    g.add(legL); g.add(legR);
-    const torso = new THREE.Mesh(new THREE.BoxGeometry(torsoW, torsoH, 0.28), mats.torso || sk);
-    torso.position.y = legLen + torsoH / 2;
-    g.add(torso);
-    const armGeo = new THREE.BoxGeometry(0.14, o.armLen || 0.78, 0.16);
-    armGeo.translate(0, -(o.armLen || 0.78) / 2, 0);
-    const armL = new THREE.Mesh(armGeo, sk);
-    armL.position.set(-torsoW / 2 - 0.09, legLen + torsoH - 0.06, 0);
-    const armR = armL.clone(); armR.position.x = torsoW / 2 + 0.09;
-    g.add(armL); g.add(armR);
-    const head = new THREE.Mesh(new THREE.BoxGeometry(0.3, o.headH || 0.34, 0.3), sk);
-    head.position.y = legLen + torsoH + (o.headH || 0.34) / 2 + 0.05;
-    g.add(head);
-    g.userData = { legL, legR, armL, armR, head, torso };
-    return g;
-  }
-
-  function build049(T) {
-    const robe = new THREE.MeshLambertMaterial({ map: T.skin049 });
-    const g = humanoid({ skin: robe }, { legLen: 0.9, torsoH: 1.05, armLen: 0.95, torsoW: 0.62 });
-    const hat = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.34, 0.22, 14), robe);
-    hat.position.y = 2.32;
-    g.add(hat);
-    const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.46, 0.46, 0.05, 16), robe);
-    brim.position.y = 2.21;
-    g.add(brim);
-    const beak = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.7, 10), robe);
-    beak.rotation.x = Math.PI / 2;
-    beak.position.set(0, 1.96, 0.34);
-    g.add(beak);
-    const face = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.3),
-      new THREE.MeshLambertMaterial({ map: T.mask049 }));
-    face.position.set(0, 1.98, 0.16);
-    g.add(face);
-    return g;
-  }
-
-  function build939(T) {
-    const flesh = new THREE.MeshLambertMaterial({ map: T.skin939 });
-    const g = humanoid({ skin: flesh }, { legLen: 0.7, torsoH: 1.0, armLen: 1.1, torsoW: 0.8, headH: 0.5 });
-    g.rotation.x = 0.28;
-    const jaw = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.2, 0.5), flesh);
-    jaw.position.set(0, 1.6, 0.3);
-    g.add(jaw);
-    return g;
-  }
-
-  function build966(T) {
-    const mat = new THREE.MeshBasicMaterial({
-      map: T.skin966, transparent: true, opacity: 0.35, depthWrite: false
+    const opts = Object.assign({}, o, {
+      torso: (mats && mats.torso) || (mats && mats.skin),
+      pants: (mats && mats.skin),
+      sleeve: (mats && mats.torso) || (mats && mats.skin),
+      skin: (mats && mats.skin) || undefined
     });
-    const g = humanoid({ skin: mat }, { legLen: 1.1, torsoH: 0.9, armLen: 1.3, torsoW: 0.42, headH: 0.36 });
-    return g;
+    return S.models.humanoid(opts);
   }
 
-  function build513_1() {
-    const mat = new THREE.MeshBasicMaterial({ color: 0x0b0b10 });
-    const g = humanoid({ skin: mat }, { legLen: 1.35, torsoH: 1.1, armLen: 1.5, torsoW: 0.42, headH: 0.42 });
-    const eye = new THREE.MeshBasicMaterial({ color: 0xd8d8d8 });
-    for (const ox of [-0.07, 0.07]) {
-      const e = new THREE.Mesh(new THREE.SphereGeometry(0.032, 6, 6), eye);
-      e.position.set(ox, 2.9, 0.16);
-      g.add(e);
-    }
-    return g;
-  }
-
-  function buildBear(T, ears) {
-    const mat = new THREE.MeshLambertMaterial({ map: ears ? T.bearEars : T.bear });
-    const g = new THREE.Group();
-    const body = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 10), mat);
-    body.position.y = 0.3;
-    body.scale.set(1, 1.2, 0.9);
-    g.add(body);
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 10), mat);
-    head.position.y = 0.72;
-    g.add(head);
-    for (const ox of [-0.16, 0.16]) {
-      const ear = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 8), mat);
-      ear.position.set(ox, 0.9, 0);
-      g.add(ear);
-    }
-    if (!ears) {
-      const eye = new THREE.MeshBasicMaterial({ color: 0x101010 });
-      for (const ox of [-0.07, 0.07]) {
-        const e = new THREE.Mesh(new THREE.SphereGeometry(0.03, 6, 6), eye);
-        e.position.set(ox, 0.76, 0.19);
-        g.add(e);
-      }
-    }
-    return g;
-  }
-
-  function buildDuck() {
-    const mat = new THREE.MeshLambertMaterial({ color: 0xe0c020 });
-    const g = new THREE.Group();
-    const body = new THREE.Mesh(new THREE.SphereGeometry(0.2, 10, 8), mat);
-    body.position.y = 0.2;
-    body.scale.set(1.3, 0.85, 1);
-    g.add(body);
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 8), mat);
-    head.position.set(0.16, 0.36, 0);
-    g.add(head);
-    const beak = new THREE.Mesh(new THREE.ConeGeometry(0.055, 0.15, 8),
-      new THREE.MeshLambertMaterial({ color: 0xe07020 }));
-    beak.rotation.z = -Math.PI / 2;
-    beak.position.set(0.3, 0.35, 0);
-    g.add(beak);
-    return g;
-  }
+  function build049(T) { return S.models.build049(T); }
+  function build939(T) { return S.models.build939(T); }
+  function build966(T) { return S.models.build966(T); }
+  function build513_1() { return S.models.build513_1(); }
+  function buildBear(T, ears) { return S.models.buildBear(T, ears); }
+  function buildDuck() { return S.models.buildDuck(); }
 
   /* -------------------------------------------------- 主逻辑 */
   S.attachScps = function (game) {

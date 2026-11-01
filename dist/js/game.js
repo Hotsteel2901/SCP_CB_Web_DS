@@ -50,7 +50,8 @@ window.SCP = window.SCP || {};
     tunnelCode: false, gateUnlocked: false, holeCool: 0, blurTime: 0,
     disease: null, stomach: null, stamEffect: null, blinkEffect: null,
     regent: 0, bEnd: null, gateAState: null, forest: null, odim: null,
-    odimMesh: null, monsterMesh: null, odimHint: false, DEATHS_EXT: {}
+    odimMesh: null, monsterMesh: null, odimHint: false, DEATHS_EXT: {},
+    lastEnding: null, touchAxis: { x: 0, y: 0 }, touchSprint: false
   };
   S.game = G;
 
@@ -105,7 +106,7 @@ window.SCP = window.SCP || {};
       G.scene.fog.near = 2; G.scene.fog.far = 27;
       G.renderer.setClearColor(0x000000);
       G.hemi.color.setHex(0x9aa5b5); G.hemi.groundColor.setHex(0x20232a);
-      G.hemi.intensity = G.lightsOut > 0 ? 0.07 : 0.6;
+      G.hemi.intensity = G.lightsOut > 0 ? 0.06 : 0.34;
     }
     if (G.fogOverride) {
       G.scene.fog.near = G.fogOverride[0];
@@ -119,19 +120,47 @@ window.SCP = window.SCP || {};
     G.seed = seed;
     G.rng = S.makeRng(seed + ':run');
     const canvas = $('c');
-    G.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-    G.renderer.setPixelRatio(Math.min(devicePixelRatio, 1.6));
+    const touch = S.fx.isTouch;
+    G.renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: !touch,
+      powerPreference: 'high-performance',
+      alpha: false
+    });
+    G.renderer.setPixelRatio(Math.min(devicePixelRatio, touch ? 1.5 : 2));
     G.renderer.setSize(innerWidth, innerHeight);
+    if ('outputEncoding' in G.renderer) G.renderer.outputEncoding = THREE.sRGBEncoding;
+    if ('toneMapping' in G.renderer) {
+      G.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      G.renderer.toneMappingExposure = 0.86;
+    }
     G.scene = new THREE.Scene();
-    G.scene.fog = new THREE.Fog(0x000000, 2, 27);
-    G.camera = new THREE.PerspectiveCamera(72, innerWidth / innerHeight, 0.08, 400);
+    G.scene.fog = new THREE.Fog(0x05070a, 2, 30);
+    G.camera = new THREE.PerspectiveCamera(74, innerWidth / innerHeight, 0.06, 300);
     G.camera.rotation.order = 'YXZ';
-    G.hemi = new THREE.HemisphereLight(0x9aa5b5, 0x20232a, 0.6);
+    G.hemi = new THREE.HemisphereLight(0x8f9aa8, 0x14161a, 0.26);
     G.scene.add(G.hemi);
-    G.plight = new THREE.PointLight(0xffe6c8, 0.65, 13);
+    G.plight = new THREE.PointLight(0xffe8cc, 1.2, 17, 1.8);
     G.scene.add(G.plight);
+    // 停电时的手电筒（挂在相机上，只在黑暗中开启）
+    G.flash = new THREE.SpotLight(0xfff0d6, 0, 26, 0.46, 0.55, 1.2);
+    G.flash.position.set(0, 0, 0.1);
+    G.flash.target.position.set(0, 0, -1);
+    G.camera.add(G.flash);
+    G.camera.add(G.flash.target);
+    G.scene.add(G.camera);
     G.TEX = S.buildTextures();
+    // 画布纹理按 sRGB 采样，颜色才不会被色调映射洗白
+    if (THREE.sRGBEncoding) {
+      for (const k in G.TEX) {
+        const t = G.TEX[k];
+        if (t && t.isTexture && k.indexOf('normal') < 0) t.encoding = THREE.sRGBEncoding;
+      }
+    }
     G.ICONS = S.buildIcons();
+    S.fx.initEnvironment(G.renderer, G.scene);
+    S.fx.initPost();
+    S.fx.applyQuality(G.renderer, G.camera, G.scene, S.fx.quality);
     G.layout = S.genLayout(seed);
     G.world = S.buildWorld(G);
     G.inv = S.Inventory(G);
@@ -147,8 +176,8 @@ window.SCP = window.SCP || {};
     G.loops.amb = A.makeAmbience();
     G.loops.amb.set(0.1, 1);
     G.loops.bgm = A.makeBgm();
-    G.loops.bgm.set(0.5, 2);
     G.loops.bgm.start();
+    G.loops.bgm.set(0.5, 2);
     G.npcs.p173.scrape = A.makeScrape();
     G.npcs.p096.sob = A.makeSob();
     G.loops.gas = A.makeGasHiss();
@@ -209,8 +238,8 @@ window.SCP = window.SCP || {};
     G.lightsOut = Math.max(G.lightsOut, dur);
     A.flicker();
     G.world.mats.lightPanel.color.setHex(0x14161a);
-    G.hemi.intensity = 0.07;
-    G.plight.intensity = 0.18;
+    G.hemi.intensity = 0.06;
+    G.plight.intensity = 0.22;
     if (fn) setTimeout(fn, 120);
   }
   G.blackoutToast = function () {
@@ -354,6 +383,7 @@ window.SCP = window.SCP || {};
     if (G.state === 'play' && G.uiOpen === 0) lockPointer();
   }
   function lockPointer() {
+    if (S.fx && S.fx.isTouch) return;   // 触屏设备没有指针锁定
     const c = $('c');
     if (c.requestPointerLock) c.requestPointerLock();
   }
@@ -449,6 +479,48 @@ window.SCP = window.SCP || {};
   G.renderInv = renderInv;
   G.useItemAt = useItem;
   G.dropItemAt = dropItem;
+
+  /* ---------- 触屏 / 移动端对外接口（供 js/mobile.js 调用） ---------- */
+  G.doInteract = function () { if (hintTarget) doInteract(); };
+  G.doBlink = function (d) { if (!G.blinking) doBlink(d || 0.32); };
+  G.toggleInventory = function () {
+    if (G.state !== 'play' || G.dead) return;
+    if (!$('inv').classList.contains('hidden')) { closeOverlay('inv'); return; }
+    if (G.uiOpen === 0) { renderInv(); openOverlay('inv'); }
+  };
+  G.toggleSnav = function () {
+    if (G.state !== 'play' || G.dead) return;
+    if (G.worn.snavUlt) {
+      G.worn.snavUlt = false; G.inv.equipped.snav = false;
+      $('minimap').classList.add('hidden');
+      G.msg('S-NAV 已关闭');
+      return;
+    }
+    const has = G.inv.slots.indexOf('snav') >= 0;
+    if (!has) { G.msg('没有 S-NAV 导航仪'); return; }
+    G.inv.equipped.snav = !G.inv.equipped.snav;
+    $('minimap').classList.toggle('hidden', !G.inv.equipped.snav);
+    G.msg(G.inv.equipped.snav ? 'S-NAV 已开启' : 'S-NAV 已关闭');
+  };
+  G.toggleNvg = function () {
+    if (G.state !== 'play' || G.dead) return;
+    if (G.worn.nvg) {
+      G.worn.nvg = null;
+      $('nvgVg').style.opacity = '0';
+      G.msg('夜视仪已关闭');
+      return;
+    }
+    let idx = G.inv.slots.indexOf('finenvg');
+    if (idx < 0) idx = G.inv.slots.indexOf('nvg');
+    if (idx < 0) { G.msg('没有夜视仪'); return; }
+    useItem(idx);
+  };
+  G.pauseGame = function () {
+    if (G.state !== 'play' || G.dead) return;
+    if (!$('pause').classList.contains('hidden')) { closeOverlay('pause'); return; }
+    $('pauseSeed').textContent = '种子：' + G.seed + (G.keter ? ' · KETER' : '') + ' · 已存活 ' + fmtTime(G.time);
+    openOverlay('pause');
+  };
 
   G.damage = function (v, cause) {
     if (G.dead || G.god) return;
@@ -549,9 +621,21 @@ window.SCP = window.SCP || {};
       G.announce('Evacuation transport inbound to platform LZ-B. All cleared personnel stand by.', '撤离运输机正接近 LZ-B 平台，已获许可人员请待命。');
     }, 4200);
   };
+  /* 结局配乐：结局界面不再跑 tick()，必须显式切换曲目 */
+  G.setEndingMusic = function (bad) {
+    G.lastEnding = bad ? 'B2' : 'B3';
+    if (!S.music) return;
+    try {
+      S.music.start();
+      S.music.setTension(bad ? 0.86 : 0.12);
+      S.music.setScene(bad ? 'endingBad' : 'endingGood', true);
+    } catch (e) { }
+  };
+
   function finishEnding() {
     G.state = 'ending';
     stopAllLoops();
+    G.setEndingMusic(false);
     document.exitPointerLock && document.exitPointerLock();
     $('endTitle').textContent = '逃离 — B 大门';
     $('endBody').textContent =
@@ -600,17 +684,27 @@ window.SCP = window.SCP || {};
     if (G.keys['KeyS']) mz += 1;
     if (G.keys['KeyA']) mx -= 1;
     if (G.keys['KeyD']) mx += 1;
+    // 触屏虚拟摇杆（analog）：与键盘叠加，摇杆量级直接作为速度系数
+    let analog = 1;
+    if (G.touchAxis.x || G.touchAxis.y) {
+      const ax = G.touchAxis.x, az = G.touchAxis.y;
+      const al = Math.hypot(ax, az);
+      if (al > 0.08) {
+        mx += ax; mz += az;
+        analog = Math.min(1, al);
+      }
+    }
     const moving = (mx || mz);
     let sprint = false;
     const stamMult = G.stamEffect ? G.stamEffect.mult : 1;
-    if ((G.keys['ShiftLeft'] || G.keys['ShiftRight']) && moving && G.stamina > 0.02) {
+    if ((G.keys['ShiftLeft'] || G.keys['ShiftRight'] || G.touchSprint) && moving && G.stamina > 0.02) {
       sprint = true;
       G.stamina = Math.max(0, G.stamina - dt / 7 * stamMult);
     } else {
       G.stamina = Math.min(1, G.stamina + dt / 11 * (stamMult > 1 ? 0.6 : 1));
     }
     if (G.infStamina || G.superman) G.stamina = 1;
-    let spd = sprint ? 6.6 : 3.5;
+    let spd = (sprint ? 6.6 : 3.5) * analog;
     if (G.superman) spd *= 4;
     if (G.noclip) spd = G.noclipSpeed * (sprint ? 2 : 1);
     if (moving) {
@@ -637,7 +731,7 @@ window.SCP = window.SCP || {};
     G.camera.position.set(p.x, 1.62 + bobY, p.z);
     G.camera.rotation.y = p.yaw;
     G.camera.rotation.x = p.pitch;
-    G.plight.position.set(p.x, 2.2, p.z);
+    G.plight.position.set(p.x, 1.88, p.z);
 
     if (G.area === 'facility') {
       const ck = S.key(S.colOf(p.x), S.rowOf(p.z));
@@ -700,7 +794,10 @@ window.SCP = window.SCP || {};
     if (best) {
       hintTarget = best;
       $('hint').classList.remove('hidden');
-      $('hint').textContent = best.type === 'pickup' ? '[E] 拾取 ' + S.ITEMS[best.pk.id].name : best.it.hint();
+      let txt = best.type === 'pickup' ? '[E] 拾取 ' + S.ITEMS[best.pk.id].name : best.it.hint();
+      // 触屏没有 E 键，提示语里去掉按键前缀
+      if (S.fx.isTouch) txt = txt.replace(/\[E\]\s*/g, '').replace(/\[F\]\s*/g, '');
+      $('hint').textContent = txt;
     } else {
       $('hint').classList.add('hidden');
     }
@@ -841,8 +938,8 @@ window.SCP = window.SCP || {};
       G.lightsOut -= dt;
       if (G.lightsOut <= 0) {
         G.world.mats.lightPanel.color.setHex(0xd8e2ea);
-        if (G.area === 'facility') G.hemi.intensity = 0.6;
-        G.plight.intensity = 0.65;
+        if (G.area === 'facility') G.hemi.intensity = 0.34;
+        G.plight.intensity = 1.2;
         A.flicker();
       }
     }
@@ -886,13 +983,29 @@ window.SCP = window.SCP || {};
   }
 
   function updateBgmDanger() {
-    if (!G.loops.bgm) return;
+    if (!S.music) return;
     const n = G.npcs;
     let d = 0;
-    if (n.p106.state === 'chase' || n.p106.state === 'rising') d = 1;
-    else if (n.p096.state === 'chase' || n.p096.state === 'enrage') d = 0.85;
-    else if (n.p173.active && S.dist2d(n.p173.x, n.p173.z, G.player.x, G.player.z) < 14) d = 0.35;
-    G.loops.bgm.setDanger(d, 0.6);
+    if (G.area === 'pd' || G.area === 'odim' || G.area === 'forest') d = 0.55;
+    if (n.p106.state === 'chase' || n.p106.state === 'rising') d = Math.max(d, 1);
+    else if (n.p096.state === 'chase' || n.p096.state === 'enrage') d = Math.max(d, 0.92);
+    else if (n.p173.active && S.dist2d(n.p173.x, n.p173.z, G.player.x, G.player.z) < 14) d = Math.max(d, 0.38);
+    if (n.extra) {
+      for (const e of (n.extra.p939 || [])) {
+        if (e.state === 'hunt' && S.dist2d(e.x, e.z, G.player.x, G.player.z) < 18) d = Math.max(d, 0.62);
+      }
+    }
+    let scene = 'lcz';
+    if (G.area === 'pd') scene = 'pocket';
+    else if (G.area === 'outside' || G.area === 'gatea') scene = 'ez';
+    else {
+      const cell = G.layout.get(S.colOf(G.player.x), S.rowOf(G.player.z));
+      if (cell) scene = cell.zone === 'HCZ' || cell.zone === 'CPA' ? 'hcz' : cell.zone === 'EZ' || cell.zone === 'CPB' || cell.zone === 'GATE' ? 'ez' : 'lcz';
+    }
+    if (G.state === 'ending') scene = G.lastEnding === 'B2' ? 'endingBad' : 'endingGood';
+    if (d > 0.68) scene = 'chase';
+    S.music.setScene(scene);
+    S.music.setTension(d);
   }
 
   function updateHud() {
@@ -987,6 +1100,13 @@ window.SCP = window.SCP || {};
       if (G.updateEndgame) G.updateEndgame(dt);
       updateBgmDanger();
     }
+    // 手电 / 环境光：停电时给一束可依赖的锥光
+    if (G.flash) {
+      const darkNow = G.lightsOut > 0 || G.area === 'pd';
+      G.flash.intensity += ((darkNow && !G.worn.nvg ? 1.55 : 0) - G.flash.intensity) * Math.min(1, dt * 6);
+      G.flash.visible = G.flash.intensity > 0.01;
+    }
+    S.fx.tune(G.renderer, dt, G.camera);
     updateHud();
     mapTick -= dt;
     if (mapTick <= 0) { mapTick = 0.3; drawMinimap(); }
@@ -997,7 +1117,7 @@ window.SCP = window.SCP || {};
     const dt = Math.min(0.05, Math.max(0.0001, (now - last) / 1000 || 0.016));
     last = now;
     if (G.state === 'menu') return;
-    const paused = (G.uiOpen > 0) || (!G.pointerLocked && G.state === 'play' && G.time > 1 && !G.consoleOpen);
+    const paused = (G.uiOpen > 0) || (!S.fx.isTouch && !G.pointerLocked && G.state === 'play' && G.time > 1 && !G.consoleOpen);
     if ((G.state === 'play' || G.state === 'elevator') && !paused && !G.dead) {
       tick(dt);
     }
@@ -1051,7 +1171,12 @@ window.SCP = window.SCP || {};
         if (!G.blinking) doBlink(0.32);
       }
       if (e.code === 'KeyE' && G.state === 'play' && G.uiOpen === 0 && !G.dead) doInteract();
-      if (e.code === 'Escape') { }
+      if (e.code === 'Escape') {
+        if (G.state !== 'play' || G.dead) return;
+        if (!$('pause').classList.contains('hidden')) { closeOverlay('pause'); return; }
+        if (G.uiOpen > 0) return;
+        G.pauseGame();
+      }
     });
     addEventListener('keyup', (e) => { G.keys[e.code] = false; });
     addEventListener('blur', () => { G.keys = {}; });
@@ -1062,7 +1187,7 @@ window.SCP = window.SCP || {};
     });
     document.addEventListener('pointerlockchange', () => {
       G.pointerLocked = (document.pointerLockElement === $('c'));
-      if (!G.pointerLocked && G.state === 'play' && G.uiOpen === 0 && !G.dead && !G.consoleOpen && G.time > 1) {
+      if (!G.pointerLocked && G.state === 'play' && G.uiOpen === 0 && !G.dead && !G.consoleOpen && G.time > 1 && !S.fx.isTouch) {
         $('pauseSeed').textContent = '种子：' + G.seed + (G.keter ? ' · KETER' : '') + ' · 已存活 ' + fmtTime(G.time);
         $('pause').classList.remove('hidden');
         G.uiOpen++;
@@ -1074,6 +1199,7 @@ window.SCP = window.SCP || {};
     });
     addEventListener('resize', () => {
       if (!G.renderer) return;
+      G.renderer.setPixelRatio(Math.min(devicePixelRatio, S.fx.isTouch ? 1.5 : 2) * S.fx.scale);
       G.renderer.setSize(innerWidth, innerHeight);
       G.camera.aspect = innerWidth / innerHeight;
       G.camera.updateProjectionMatrix();
@@ -1619,6 +1745,7 @@ window.SCP = window.SCP || {};
       $('loading').classList.remove('hidden');
       setTimeout(() => {
         G.init(seed);
+        if (S.mobile) S.mobile.init(G);
         $('loading').classList.add('hidden');
         lockPointer();
       }, 60);
@@ -1639,6 +1766,7 @@ window.SCP = window.SCP || {};
     $('endMenuBtn').onclick = () => { location.search = G.keter ? '?diff=keter' : ''; };
     $('docClose').onclick = () => closeOverlay('reader');
     $('pickCancel').onclick = () => closeOverlay('pick');
+    $('invClose').onclick = () => closeOverlay('inv');
     if (window.speechSynthesis) speechSynthesis.getVoices();
   }
 

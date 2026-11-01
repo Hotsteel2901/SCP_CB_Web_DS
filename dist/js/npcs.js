@@ -3,84 +3,23 @@ window.SCP = window.SCP || {};
   const A = S.audio;
 
   function build173(T) {
-    const grp = new THREE.Group();
-    const skin = new THREE.MeshLambertMaterial({ map: T.skin173 });
-    const pts = [];
-    pts.push(new THREE.Vector2(0.34, 0));
-    pts.push(new THREE.Vector2(0.42, 0.12));
-    pts.push(new THREE.Vector2(0.30, 0.5));
-    pts.push(new THREE.Vector2(0.42, 1.05));
-    pts.push(new THREE.Vector2(0.36, 1.45));
-    pts.push(new THREE.Vector2(0.18, 1.62));
-    const body = new THREE.Mesh(new THREE.LatheGeometry(pts, 14), skin);
-    grp.add(body);
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.34, 14, 12), skin);
-    head.scale.set(1, 1.15, 0.92);
-    head.position.y = 1.86;
-    grp.add(head);
-    const face = new THREE.Mesh(new THREE.PlaneGeometry(0.56, 0.62),
-      new THREE.MeshLambertMaterial({ map: T.face173, transparent: true }));
-    face.position.set(0, 1.87, 0.3);
-    grp.add(face);
-    const armG = new THREE.SphereGeometry(0.16, 8, 8);
-    const a1 = new THREE.Mesh(armG, skin);
-    a1.scale.set(1, 2.2, 1);
-    a1.position.set(-0.42, 1.15, 0.05);
-    a1.rotation.z = 0.5;
-    grp.add(a1);
-    const a2 = a1.clone();
-    a2.position.x = 0.42;
-    a2.rotation.z = -0.5;
-    grp.add(a2);
-    return grp;
+    return S.models.build173(T);
   }
 
   function humanoid(mats, opts) {
-    const o = opts || {};
-    const grp = new THREE.Group();
-    const sk = mats.skin;
-    const legL = new THREE.Mesh(new THREE.BoxGeometry(0.2, o.legLen || 0.95, 0.22), sk);
-    legL.position.set(-0.14, (o.legLen || 0.95) / 2, 0);
-    const legR = legL.clone(); legR.position.x = 0.14;
-    grp.add(legL); grp.add(legR);
-    const torso = new THREE.Mesh(new THREE.BoxGeometry(o.torsoW || 0.52, o.torsoH || 0.72, 0.28), mats.torso || sk);
-    torso.position.y = (o.legLen || 0.95) + (o.torsoH || 0.72) / 2;
-    grp.add(torso);
-    const armGeo = new THREE.BoxGeometry(0.14, o.armLen || 0.78, 0.16);
-    armGeo.translate(0, -(o.armLen || 0.78) / 2, 0);
-    const armL = new THREE.Mesh(armGeo, sk);
-    armL.position.set(-(o.torsoW || 0.52) / 2 - 0.09, (o.legLen || 0.95) + (o.torsoH || 0.72) - 0.06, 0);
-    const armR = armL.clone(); armR.position.x = (o.torsoW || 0.52) / 2 + 0.09;
-    grp.add(armL); grp.add(armR);
-    const head = new THREE.Mesh(new THREE.BoxGeometry(0.3, o.headH || 0.34, 0.3), sk);
-    head.position.y = (o.legLen || 0.95) + (o.torsoH || 0.72) + (o.headH || 0.34) / 2 + 0.05;
-    grp.add(head);
-    grp.userData = { legL, legR, armL, armR, head, torso };
-    return grp;
+    return S.models.humanoid(Object.assign({}, opts, { torso: (mats && mats.torso) || (mats && mats.skin), pants: (mats && mats.skin), sleeve: (mats && mats.torso) || (mats && mats.skin) }));
   }
 
   function build106(T) {
-    const skin = new THREE.MeshLambertMaterial({ map: T.skin106, transparent: true, opacity: 0.96 });
-    const g = humanoid({ skin }, { legLen: 1.05, torsoH: 0.8, armLen: 0.9 });
-    g.userData.head.scale.set(1, 1.2, 1);
-    return g;
+    return S.models.build106(T);
   }
 
   function build096(T) {
-    const skin = new THREE.MeshLambertMaterial({ map: T.skin096 });
-    const g = humanoid({ skin }, { legLen: 1.15, torsoH: 0.85, armLen: 1.35, torsoW: 0.5, headH: 0.42 });
-    const face = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.4),
-      new THREE.MeshLambertMaterial({ map: T.face096 }));
-    face.position.set(0, 2.2, 0.16);
-    g.add(face);
-    g.userData.face = face;
-    return g;
+    return S.models.build096(T);
   }
 
   function buildDClass() {
-    const skin = new THREE.MeshLambertMaterial({ color: 0xc2c2b8 });
-    const torso = new THREE.MeshLambertMaterial({ color: 0xb85c1e });
-    return humanoid({ skin, torso }, {});
+    return S.models.dclass();
   }
 
   S.createNpcs = function (game) {

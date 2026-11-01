@@ -70,9 +70,9 @@ window.SCP = window.SCP || {};
       }
       grain(x, w, h, o.grain || 90, o.spread || 70, o.dots || 5000);
       for (let i = 0; i < (o.stains || 26); i++) {
-        x.fillStyle = 'rgba(38,32,24,' + (0.03 + Math.random() * 0.09) + ')';
+        x.fillStyle = 'rgba(38,32,24,' + (0.02 + Math.random() * 0.06) + ')';
         x.beginPath();
-        x.ellipse(Math.random() * w, Math.random() * h, 6 + Math.random() * 46, 5 + Math.random() * 30, Math.random() * 3, 0, 7);
+        x.ellipse(Math.random() * w, Math.random() * h, 4 + Math.random() * 22, 3 + Math.random() * 16, Math.random() * 3, 0, 7);
         x.fill();
       }
       if (o.scuff) {
@@ -94,9 +94,9 @@ window.SCP = window.SCP || {};
       noise(x, w, h, 0.05, 2600);
       return tex(c);
     }
-    T.lczWall = panel(512, 512, '#b7b1a2', 2, '#6e685c', { bevel: true, bolts: true, scuff: true, stains: 30, grain: 100, spread: 80 });
-    T.lczFloor = panel(512, 512, '#8d8b84', 4, '#6b6961', { bevel: true, scuff: true, stains: 40, grain: 96, spread: 60, dots: 7000 });
-    T.hczWall = panel(512, 512, '#33383f', 2, '#232830', { bevel: true, bolts: true, rust: true, stains: 34, grain: 34, spread: 44, dots: 4200 });
+    T.lczWall = panel(512, 512, '#8f897c', 2, '#514c44', { bevel: true, bolts: true, scuff: true, stains: 26, grain: 132, spread: 64 });
+    T.lczFloor = panel(512, 512, '#6f6d67', 4, '#4c4a45', { bevel: true, scuff: true, stains: 30, grain: 108, spread: 50, dots: 11000 });
+    T.hczWall = panel(512, 512, '#2b3037', 2, '#171b21', { bevel: true, bolts: true, rust: true, stains: 20, grain: 40, spread: 36, dots: 5200 });
     T.hczFloor = panel(512, 512, '#2b3037', 4, '#1d2229', { bevel: true, rust: true, stains: 30, grain: 32, spread: 40, dots: 5200 });
     T.ezWall = (function () {
       const [c, x] = cv(512, 512);

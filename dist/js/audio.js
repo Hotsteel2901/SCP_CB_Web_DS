@@ -14,6 +14,9 @@ window.SCP = window.SCP || {};
     sfxBus = ctx.createGain(); sfxBus.connect(master);
     musBus = ctx.createGain(); musBus.gain.value = 0.5; musBus.connect(master);
     A.ctx = ctx;
+    A.master = master;
+    A.sfxBus = sfxBus;
+    A.musBus = musBus;
   };
   A.setVolume = function (v) {
     A.volume = v;
