@@ -231,13 +231,13 @@ window.SCP = window.SCP || {};
       chain.position.y = -0.55;
       hook.add(chain);
       const meatMat = new THREE.MeshStandardMaterial({ color: 0x6d1a16, roughness: 0.62, metalness: 0.04 });
-      const meat = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.26, 0.72, 9), meatMat);
-      meat.scale.set(1, 1, 0.82);
+      const meat = new THREE.Mesh(new THREE.CylinderGeometry(0.175, 0.235, 0.80, 9), meatMat);
+      meat.scale.set(1, 1, 0.84);
       meat.position.y = -1.35;
       meat.rotation.z = ctx.rng.range(-0.16, 0.16);
       hook.add(meat);
-      const fat = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.20, 0.12, 9),
-        new THREE.MeshStandardMaterial({ color: 0xc9b48f, roughness: 0.8 }));
+      const fat = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.155, 0.10, 9),
+        new THREE.MeshStandardMaterial({ color: 0xb8a382, roughness: 0.85 }));
       fat.position.y = -0.98;
       hook.add(fat);
       hook.position.set(px, 2.70, pz);
