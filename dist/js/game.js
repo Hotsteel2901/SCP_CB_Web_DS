@@ -106,7 +106,7 @@ window.SCP = window.SCP || {};
       G.scene.fog.near = 2; G.scene.fog.far = 27;
       G.renderer.setClearColor(0x000000);
       G.hemi.color.setHex(0x9aa5b5); G.hemi.groundColor.setHex(0x20232a);
-      G.hemi.intensity = G.lightsOut > 0 ? 0.06 : 0.34;
+      G.hemi.intensity = G.lightsOut > 0 ? 0.05 : 0.19;
     }
     if (G.fogOverride) {
       G.scene.fog.near = G.fogOverride[0];
@@ -132,7 +132,7 @@ window.SCP = window.SCP || {};
     if ('outputEncoding' in G.renderer) G.renderer.outputEncoding = THREE.sRGBEncoding;
     if ('toneMapping' in G.renderer) {
       G.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      G.renderer.toneMappingExposure = 0.86;
+      G.renderer.toneMappingExposure = 0.79;
     }
     G.scene = new THREE.Scene();
     G.scene.fog = new THREE.Fog(0x05070a, 2, 30);
@@ -140,7 +140,7 @@ window.SCP = window.SCP || {};
     G.camera.rotation.order = 'YXZ';
     G.hemi = new THREE.HemisphereLight(0x8f9aa8, 0x14161a, 0.26);
     G.scene.add(G.hemi);
-    G.plight = new THREE.PointLight(0xffe8cc, 1.2, 17, 1.8);
+    G.plight = new THREE.PointLight(0xffe4c4, 1.02, 15, 1.95);
     G.scene.add(G.plight);
     // 停电时的手电筒（挂在相机上，只在黑暗中开启）
     G.flash = new THREE.SpotLight(0xfff0d6, 0, 26, 0.46, 0.55, 1.2);
@@ -938,8 +938,8 @@ window.SCP = window.SCP || {};
       G.lightsOut -= dt;
       if (G.lightsOut <= 0) {
         G.world.mats.lightPanel.color.setHex(0xd8e2ea);
-        if (G.area === 'facility') G.hemi.intensity = 0.34;
-        G.plight.intensity = 1.2;
+        if (G.area === 'facility') G.hemi.intensity = 0.19;
+        G.plight.intensity = 1.02;
         A.flicker();
       }
     }

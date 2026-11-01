@@ -55,32 +55,63 @@ window.SCP = window.SCP || {};
     /* SCP-173：被岁月侵蚀的混凝土，带锈迹与缺口 */
     {
       const c = cv(256, 256), x = c.getContext('2d');
-      x.fillStyle = '#9a9384';
+      x.fillStyle = '#8b8476';
       x.fillRect(0, 0, 256, 256);
+      /* 大面积色斑：浇筑不均留下的深浅 */
       for (let i = 0; i < 900; i++) {
-        const v = 118 + Math.random() * 68;
+        const v = 108 + Math.random() * 64;
         x.fillStyle = 'rgba(' + v + ',' + (v - 6) + ',' + (v - 20) + ',' + (0.06 + Math.random() * 0.16) + ')';
         x.beginPath();
         x.ellipse(Math.random() * 256, Math.random() * 256, 3 + Math.random() * 26, 2 + Math.random() * 16, Math.random() * 3, 0, 7);
         x.fill();
       }
-      for (let i = 0; i < 26; i++) {
-        x.strokeStyle = 'rgba(58,50,38,' + (0.08 + Math.random() * 0.22) + ')';
-        x.lineWidth = 1 + Math.random() * 3;
+      /* 竖向流痕：雨水与渗液长期冲刷的痕迹 */
+      for (let i = 0; i < 44; i++) {
+        const sx = Math.random() * 256, sw = 1 + Math.random() * 7;
+        const sy = Math.random() * 200, sh = 24 + Math.random() * 100;
+        const gv = x.createLinearGradient(0, sy, 0, sy + sh);
+        gv.addColorStop(0, 'rgba(56,48,36,0)');
+        gv.addColorStop(0.35, 'rgba(56,48,36,' + (0.05 + Math.random() * 0.11) + ')');
+        gv.addColorStop(1, 'rgba(56,48,36,0)');
+        x.fillStyle = gv;
+        x.fillRect(sx, sy, sw, sh);
+      }
+      /* 裂纹 */
+      for (let i = 0; i < 30; i++) {
+        x.strokeStyle = 'rgba(52,44,32,' + (0.10 + Math.random() * 0.26) + ')';
+        x.lineWidth = 0.8 + Math.random() * 2.6;
         const x0 = Math.random() * 256, y0 = Math.random() * 256;
         x.beginPath();
         x.moveTo(x0, y0);
         x.lineTo(x0 + (Math.random() - 0.5) * 60, y0 + 20 + Math.random() * 70);
         x.stroke();
       }
-      for (let i = 0; i < 14; i++) {
-        x.fillStyle = 'rgba(70,64,52,' + (0.12 + Math.random() * 0.2) + ')';
+      /* 崩口留下的浅坑：一圈暗边 + 略亮的坑底 */
+      for (let i = 0; i < 20; i++) {
+        const px = Math.random() * 256, py = Math.random() * 256, pr = 2 + Math.random() * 10;
+        const gg = x.createRadialGradient(px, py, pr * 0.2, px, py, pr);
+        gg.addColorStop(0, 'rgba(196,188,170,0.5)');
+        gg.addColorStop(0.72, 'rgba(96,88,74,0.42)');
+        gg.addColorStop(1, 'rgba(96,88,74,0)');
+        x.fillStyle = gg;
+        x.beginPath(); x.arc(px, py, pr, 0, 7); x.fill();
+      }
+      /* 气孔 */
+      for (let i = 0; i < 900; i++) {
+        x.fillStyle = 'rgba(58,52,42,' + (0.10 + Math.random() * 0.22) + ')';
         x.beginPath();
-        x.arc(Math.random() * 256, Math.random() * 256, 2 + Math.random() * 9, 0, 7);
+        x.arc(Math.random() * 256, Math.random() * 256, 0.4 + Math.random() * 1.5, 0, 7);
         x.fill();
       }
-      grain(x, 256, 256, 3000, 0.08);
-      MAT.concrete173 = FX.std({ map: tex(c, [2, 3]), roughness: 0.95, metalness: 0.02, color: 0xc4bdae, normalStrength: 0 });
+      /* 底部积尘与潮痕（flipY：画布底 = 模型底） */
+      const ga = x.createLinearGradient(0, 256, 0, 96);
+      ga.addColorStop(0, 'rgba(34,29,22,0.62)');
+      ga.addColorStop(0.55, 'rgba(34,29,22,0.16)');
+      ga.addColorStop(1, 'rgba(34,29,22,0)');
+      x.fillStyle = ga;
+      x.fillRect(0, 96, 256, 160);
+      grain(x, 256, 256, 3400, 0.10);
+      MAT.concrete173 = FX.std({ map: tex(c, [2, 3]), roughness: 0.97, metalness: 0.02, color: 0xa9a294, normalStrength: 1.15, normalScale2: 0.42 });
       const c2 = cv(128, 128), y2 = c2.getContext('2d');
       y2.fillStyle = '#9d9788';
       y2.fillRect(0, 0, 128, 128);
@@ -94,7 +125,7 @@ window.SCP = window.SCP || {};
       const c = cv(256, 320), x = c.getContext('2d');
       x.clearRect(0, 0, 256, 320);
       // 眼窝
-      for (const ex of [82, 174]) {
+      for (const ex of [78, 178]) {
         const g = x.createRadialGradient(ex, 108, 4, ex, 108, 44);
         g.addColorStop(0, 'rgba(4,4,4,1)');
         g.addColorStop(0.55, 'rgba(8,8,8,0.98)');
@@ -102,7 +133,7 @@ window.SCP = window.SCP || {};
         g.addColorStop(1, 'rgba(30,28,22,0)');
         x.fillStyle = g;
         x.beginPath();
-        x.ellipse(ex, 108, 42, 30, (ex < 128 ? -0.16 : 0.16), 0, 7);
+        x.ellipse(ex, 112, 47, 22, (ex < 128 ? -0.13 : 0.13), 0, 7);
         x.fill();
         // 眼窝边缘的崩裂
         for (let i = 0; i < 5; i++) {
@@ -123,13 +154,13 @@ window.SCP = window.SCP || {};
       x.closePath();
       x.fill();
       // 嘴：张开的黑洞
-      const mg = x.createRadialGradient(128, 228, 4, 128, 228, 46);
+      const mg = x.createRadialGradient(128, 224, 3, 128, 224, 40);
       mg.addColorStop(0, 'rgba(2,2,2,1)');
       mg.addColorStop(0.7, 'rgba(6,6,6,0.98)');
       mg.addColorStop(1, 'rgba(20,18,14,0)');
       x.fillStyle = mg;
       x.beginPath();
-      x.ellipse(128, 228, 44, 34, 0, 0, 7);
+      x.ellipse(128, 224, 31, 27, 0, 0, 7);
       x.fill();
       // 嘴边的裂纹
       for (let i = 0; i < 7; i++) {
@@ -450,85 +481,146 @@ window.SCP = window.SCP || {};
   }
   M.roughen = roughen;
 
+  /* Catmull-Rom 重采样：让 Lathe 的侧影更圆润，同时给顶点级细节提供足够密度 */
+  function resample(prof, n) {
+    const pts = prof.map((p) => new THREE.Vector2(p[0], p[1]));
+    const out = [];
+    const seg = pts.length - 1;
+    for (let i = 0; i < n; i++) {
+      const t = (i / (n - 1)) * seg;
+      const k = Math.min(seg - 1, Math.floor(t));
+      const f = t - k;
+      const p0 = pts[Math.max(0, k - 1)], p1 = pts[k], p2 = pts[k + 1], p3 = pts[Math.min(seg, k + 2)];
+      const f2 = f * f, f3 = f2 * f;
+      const cr = (a, b, c, d) => 0.5 * ((2 * b) + (-a + c) * f + (2 * a - 5 * b + 4 * c - d) * f2 + (-a + 3 * b - 3 * c + d) * f3);
+      out.push([cr(p0.x, p1.x, p2.x, p3.x), cr(p0.y, p1.y, p2.y, p3.y)]);
+    }
+    return out;
+  }
+  M.resample = resample;
+
+  /* 顶点级崩口：在表面挑若干点做碗状凹陷，做出石料被磕掉一块的真实轮廓，
+     比贴图更有效——侧光下的明暗边界会跟着凹坑走。 */
+  function pockmark(mesh, count, seed, rMin, rMax, dMin, dMax) {
+    const geo = mesh.geometry;
+    if (!geo || !geo.attributes.position) return mesh;
+    geo.computeVertexNormals();
+    const pos = geo.attributes.position, nor = geo.attributes.normal;
+    const n = pos.count;
+    const P = new Float32Array(n * 3), N = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) {
+      P[i * 3] = pos.getX(i); P[i * 3 + 1] = pos.getY(i); P[i * 3 + 2] = pos.getZ(i);
+      N[i * 3] = nor.getX(i); N[i * 3 + 1] = nor.getY(i); N[i * 3 + 2] = nor.getZ(i);
+    }
+    let sd = Math.abs(Math.floor(seed || 11)) % 2147483647 || 11;
+    const rnd = () => { sd = (sd * 16807) % 2147483647; return sd / 2147483647; };
+    const hits = [];
+    const rc = rMin || 0.08, rx = rMax || 0.18, dc = dMin || 0.01, dx = dMax || 0.03;
+    for (let k = 0; k < count; k++) {
+      const i = Math.floor(rnd() * n);
+      hits.push({ x: P[i * 3], y: P[i * 3 + 1], z: P[i * 3 + 2], r: rc + rnd() * (rx - rc), d: dc + rnd() * (dx - dc) });
+    }
+    for (let i = 0; i < n; i++) {
+      const px = P[i * 3], py = P[i * 3 + 1], pz = P[i * 3 + 2];
+      let off = 0;
+      for (let k = 0; k < hits.length; k++) {
+        const h = hits[k];
+        const ddx = px - h.x, ddy = py - h.y, ddz = pz - h.z;
+        const dd = Math.sqrt(ddx * ddx + ddy * ddy + ddz * ddz);
+        if (dd < h.r) { const t = 1 - dd / h.r; off -= h.d * t * t; }
+      }
+      if (off !== 0) pos.setXYZ(i, px + N[i * 3] * off, py + N[i * 3 + 1] * off, pz + N[i * 3 + 2] * off);
+    }
+    pos.needsUpdate = true;
+    geo.computeVertexNormals();
+    return mesh;
+  }
+  M.pockmark = pockmark;
+
   /* ------------------------------------------------------------------ SCP-173 */
   M.build173 = function (T) {
     const m = buildMaterials(T);
     const g = new THREE.Group();
     const con = m.concrete173;
 
-    // 侧影：宽底座 → 收腰 → 外扩的胸腔 → 细颈 → 前倾的头（比例按 2.1m 的雕塑校准）
+    /* 侧影：近乎笔直的柱体，只在肩部收拢——原作雕塑是一整块浇筑体，不是花瓶。
+       底部有一圈薄台阶（运输底座留下的痕迹），往上到胸口略外扩，肩部收进，直接接头部。 */
     const prof = [
-      [0.300, 0.000], [0.356, 0.040], [0.350, 0.115], [0.324, 0.240],
-      [0.306, 0.375], [0.298, 0.515], [0.308, 0.670], [0.326, 0.830],
-      [0.338, 0.995], [0.344, 1.140], [0.334, 1.260], [0.312, 1.380],
-      [0.276, 1.480], [0.232, 1.560], [0.198, 1.630], [0.188, 1.690]
+      [0.286, 0.000], [0.312, 0.022], [0.310, 0.066], [0.296, 0.130],
+      [0.281, 0.240], [0.272, 0.380], [0.271, 0.520], [0.277, 0.680],
+      [0.286, 0.840], [0.294, 0.990], [0.297, 1.120], [0.291, 1.240],
+      [0.276, 1.360], [0.254, 1.470], [0.236, 1.560], [0.222, 1.640]
     ];
-    const body = lathe(prof, con, 34);
+    const body = lathe(resample(prof, 48), con, 56);
     body.scale.z = 0.93;
-    roughen(body, 0.011, 1.3);
+    roughen(body, 0.007, 1.3);
+    pockmark(body, 17, 9173, 0.070, 0.170, 0.010, 0.026);
     g.add(body);
 
-    // 头：蛋形，向前探出
-    const HY = 1.860, HR = 0.246;
-    const head = sph(HR, con, 0, HY, 0.035, 24);
-    head.scale.set(1.0, 1.14, 0.96);
-    head.rotation.x = -0.12;
-    roughen(head, 0.006, 7.7);
+    /* 头：与肩部大幅重叠，杜绝“雪人脖子”；向下压、略前倾 */
+    const HY = 1.786, HR = 0.276;
+    const head = sph(HR, con, 0, HY, 0.030, 28);
+    head.scale.set(1.0, 1.18, 0.96);
+    head.rotation.x = -0.10;
+    roughen(head, 0.005, 7.7);
+    pockmark(head, 6, 1734, 0.042, 0.090, 0.006, 0.015);
     g.add(head);
 
-    // 面部：球面切片 + 透明贴图，避免平面贴片的“贴纸感”
+    /* 面部：球面切片 + 透明贴图；theta 范围下移到赤道附近，五官才不会“爬”到头顶 */
     const faceTex = MAT.face173 ? MAT.face173.map : T.face173;
     if (faceTex) {
       const fm = MAT.face173 || new THREE.MeshStandardMaterial({
         map: faceTex, transparent: true, roughness: 0.9, metalness: 0.0,
         alphaTest: 0.04, polygonOffset: true, polygonOffsetFactor: -2
       });
-      const face = new THREE.Mesh(new THREE.SphereGeometry(HR * 1.01, 24, 18, Math.PI * 0.5 - 0.68, 1.36, 0.72, 1.24), fm);
-      face.position.set(0, HY, 0.035);
-      face.scale.set(1.0, 1.14, 0.96);
-      face.rotation.x = -0.12;
+      const face = new THREE.Mesh(new THREE.SphereGeometry(HR * 1.014, 30, 22, Math.PI * 0.5 - 0.70, 1.40, 1.00, 1.00), fm);
+      face.position.set(0, HY, 0.030);
+      face.scale.set(1.0, 1.18, 0.96);
+      face.rotation.x = -0.10;
       g.add(face);
     }
 
-    // 手臂：肩在胸腔外沿，肘部外撇并前折，双手垂在身前
+    /* 手臂：肩点在柱体外沿，上臂几乎垂直，肘部前折，双手抬到胸前合拢 */
     for (const s of [-1, 1]) {
       const arm = new THREE.Group();
       arm.name = s < 0 ? 'armL' : 'armR';
-      const shoulder = sph(0.092, con, s * 0.306, 1.400, 0.005, 12);
-      shoulder.scale.set(1, 0.95, 1);
-      const upper = cyl(0.088, 0.076, 0.42, 12, con, s * 0.362, 1.185, 0.012);
-      upper.rotation.z = s * 0.13;
-      const elbow = sph(0.082, con, s * 0.404, 0.960, 0.025, 12);
-      const fore = cyl(0.076, 0.062, 0.36, 12, con, s * 0.408, 0.905, 0.108);
-      fore.rotation.x = -0.78;
-      const hand = sph(0.080, con, s * 0.410, 0.828, 0.228);
-      hand.scale.set(0.82, 1.14, 0.92);
-      hand.rotation.x = -0.28;
+      const shoulder = sph(0.098, con, s * 0.250, 1.390, 0.005, 14);
+      shoulder.scale.set(1.05, 0.95, 1);
+      const upper = cyl(0.090, 0.078, 0.40, 14, con, s * 0.300, 1.190, 0.008);
+      upper.rotation.z = s * 0.10;
+      const elbow = sph(0.084, con, s * 0.338, 0.985, 0.020, 14);
+      const fore = cyl(0.079, 0.064, 0.36, 14, con, s * 0.330, 0.955, 0.150);
+      fore.rotation.x = -1.14;
+      fore.rotation.z = s * 0.10;
+      const hand = sph(0.086, con, s * 0.252, 0.930, 0.302, 14);
+      hand.scale.set(0.80, 1.12, 0.94);
+      hand.rotation.set(-0.42, s * -0.35, 0);
       for (let f = 0; f < 4; f++) {
-        const fg = cyl(0.016, 0.013, 0.095, 6, con, s * (0.410 + (f - 1.5) * 0.033), 0.792, 0.292);
-        fg.rotation.x = -0.95;
+        const fg = cyl(0.017, 0.014, 0.10, 6, con, s * (0.226 - f * 0.006), 0.905, 0.360 + f * 0.012);
+        fg.rotation.x = -1.46;
+        fg.rotation.z = s * 0.12;
         arm.add(fg);
       }
       arm.add(shoulder, upper, elbow, fore, hand);
       g.add(arm);
     }
 
-    // 外露钢筋：从肩背的断口里戳出来
+    /* 外露钢筋：从肩背的断口里戳出来 */
     const rebarDef = [
-      [-0.22, 1.50, -0.11, 0.55, -0.42],
-      [0.20, 1.48, -0.13, -0.5, -0.46],
-      [0.26, 1.36, 0.05, -0.9, 0.22],
-      [-0.25, 1.34, 0.08, 0.85, 0.3],
-      [0.05, 1.55, -0.16, -0.2, -0.75]
+      [-0.19, 1.44, -0.10, 0.55, -0.42],
+      [0.18, 1.42, -0.12, -0.5, -0.46],
+      [0.23, 1.30, 0.04, -0.9, 0.22],
+      [-0.22, 1.28, 0.07, 0.85, 0.3],
+      [0.05, 1.49, -0.14, -0.2, -0.75]
     ];
     for (let i = 0; i < rebarDef.length; i++) {
       const d = rebarDef[i];
-      const rb = cyl(0.016, 0.012, 0.22 + (i % 2) * 0.12, 6, m.rebar, d[0], d[1], d[2]);
+      const rb = cyl(0.016, 0.012, 0.20 + (i % 2) * 0.12, 6, m.rebar, d[0], d[1], d[2]);
       rb.rotation.set(d[3], 0, d[4]);
       g.add(rb);
     }
 
-    addShadow(g, 0.48, 0.85);
+    addShadow(g, 0.46, 0.88);
     g.userData.height = 2.12;
     return g;
   };

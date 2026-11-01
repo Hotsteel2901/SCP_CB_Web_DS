@@ -57,7 +57,7 @@ body.blink #lidBottom{transform:translateY(0)}
 /* 画面后期：暗角 / 胶片颗粒 / 扫描线（纯 DOM，零 GPU 开销） */
 .fxLayer{position:fixed;inset:0;pointer-events:none;z-index:11}
 #vignette{background:radial-gradient(ellipse at 50% 50%,transparent 42%,rgba(0,0,0,.55) 88%,rgba(0,0,0,.8) 100%);opacity:.8}
-#grain{opacity:.16;background-image:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");animation:grainShift .7s steps(3) infinite;mix-blend-mode:overlay}
+#grain{opacity:.16;background-image:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");animation:grainShift .7s steps(3) infinite;mix-blend-mode:overlay}
 #scanlines{opacity:.18;background:repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0 1px,transparent 1px 3px)}
 @keyframes grainShift{0%{background-position:0 0}33%{background-position:-40px 20px}66%{background-position:30px -30px}100%{background-position:0 0}}
 #flash{position:fixed;inset:0;background:#fff;z-index:29;opacity:0;pointer-events:none}
